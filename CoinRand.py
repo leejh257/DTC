@@ -8,5 +8,3 @@ class CoinRandNode:
 n = CoinRandNode()
 
 print(math.e)
-
-
