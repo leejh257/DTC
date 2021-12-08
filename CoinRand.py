@@ -2,8 +2,10 @@ import math
 import random
 
 # 실험 매개변수 선언
-num_of_nodes = pow(2, 10)       # 전체 노드 개수 n (2의 제곱승으로 가정)
-num_of_triggers = pow(2, 20)    # 검출하고자 하는 트리거 개수 w
+# num_of_nodes = pow(2, 10)       # 전체 노드 개수 n (2의 제곱승으로 가정)
+# num_of_triggers = pow(2, 20)    # 검출하고자 하는 트리거 개수 w
+num_of_nodes = pow(2, 12)
+num_of_triggers = 1000000
 
 # CoinRand 매개변수 계산
 coin_rand_tree_depth = int(math.log2(num_of_nodes)) # CoinRand 트리 높이 L
@@ -91,7 +93,7 @@ while (w >= num_of_nodes):
                         message_count = message_sr(sender, receiver, message_count)         # 오른쪽 자식 노드의 트리거 및 코인 수 전달
                 message_count = message_sr(coin_rand_nodes[num_of_nodes - 1], coin_rand_nodes[0], message_count)    # internal 노드에 포함되지 않은 노드
                 w = w - trigger
-                print(f"1st Phase: {round:2d} 라운드 끝, 발생 트리거: {trigger:6d}, 남은 트리거: {w:6d}, 현재 message complexity: {message_count:6d}")
+                # print(f"1st Phase: {round:2d} 라운드 끝, 발생 트리거: {trigger:6d}, 남은 트리거: {w:6d}, 현재 message complexity: {message_count:6d}")
                 trigger = 0
                 for c in range(0, num_of_nodes):
                     coin_rand_nodes[c].clear()
@@ -136,7 +138,7 @@ while (w > 0):
                         sender = coin_rand_nodes[(pow(2, d + 1) - 1) + (i * 2) + 1]         # 오른쪽 자식 노드
                         message_count = message_sr(sender, receiver, message_count)         # 오른쪽 자식 노드의 코인 수 전달
                 w = w - trigger
-                print(f"2nd Phase: {round:2d} 라운드 끝, 발생 트리거: {trigger:6d}, 남은 트리거: {w:6d}, 현재 message complexity: {message_count:6d}, 현재 k 값: {k:2d}")
+                # print(f"2nd Phase: {round:2d} 라운드 끝, 발생 트리거: {trigger:6d}, 남은 트리거: {w:6d}, 현재 message complexity: {message_count:6d}, 현재 k 값: {k:2d}")
                 trigger = 0
                 for c in range(0, num_of_nodes):
                     coin_rand_nodes[c].clear()
@@ -150,4 +152,5 @@ for c in range(0, num_of_nodes):
     if (maxRcv < coin_rand_nodes[c].receive_message):
         maxRcv = coin_rand_nodes[c].receive_message
 
-print(f"maxSend: {maxSnd}, maxRcv: {maxRcv}, message complexity: {message_count:6d}")
+# print(f"maxSend: {maxSnd}, maxRcv: {maxRcv}, message complexity: {message_count:6d}")
+print(message_count, "\t", maxRcv, "\t", round)
