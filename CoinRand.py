@@ -53,7 +53,9 @@ w = num_of_triggers             # 검출하고자 하는 트리거 개수 w 초�
 trigger = 0                     # 현재까지 발생한 트리거의 수 trigger 초기화
 round = 0                       # 라운드 초기화
 message_count = 0               # 전체 메시지 수
-while (w >= num_of_nodes):                                      # First Phase (w >= n일 때)
+
+# First Phase (w >= n일 때)
+while (w >= num_of_nodes):
     round += 1                                                  # 새로운 라운드 시작
     leaf_threshold = math.ceil(w / (4 * num_of_nodes))          # 리프 노드 threshold 값 계산
     while (True):
@@ -89,17 +91,63 @@ while (w >= num_of_nodes):                                      # First Phase (w
                         message_count = message_sr(sender, receiver, message_count)         # 오른쪽 자식 노드의 트리거 및 코인 수 전달
                 message_count = message_sr(coin_rand_nodes[num_of_nodes - 1], coin_rand_nodes[0], message_count)    # internal 노드에 포함되지 않은 노드
                 w = w - trigger
-                print(f"{round:2d} 라운드 끝, 발생 트리거: {trigger:6d}, 남은 트리거: {w:6d}, 현재 message complexity: {message_count:6d}")
+                print(f"1st Phase: {round:2d} 라운드 끝, 발생 트리거: {trigger:6d}, 남은 트리거: {w:6d}, 현재 message complexity: {message_count:6d}")
                 trigger = 0
                 for c in range(0, num_of_nodes):
                     coin_rand_nodes[c].clear()
                 break
 
-print("End")
 # Second Phase (w < n일 때)
+while (w > 0):
+    for c in range(1, coin_rand_tree_depth):                                # k 계산: (L - k) layer의 트리 사용 예정
+        if (num_of_nodes / pow(2, c) <= w < num_of_nodes / pow(2, c - 1)):
+            k = c
+            break
+    round += 1                                                  # 새로운 라운드 시작
+    leaf_threshold = 1                                          # 2nd Phase의 리프 노드 threshold 값은 1
+    while (True):
+        trigger += 1                                            # 트리거 발생
+        trigger_node_index = random.randrange(0, num_of_nodes)  # 트리거 발생 노드 결정
+        coin_rand_nodes[trigger_node_index].leaf_counter += 1   # 해당 리프 노드 카운터 값 증가
+        if (coin_rand_nodes[trigger_node_index].leaf_counter == leaf_threshold):            # 리프 노드 카운터 값이 threshold에 이르면
+            coin_rand_nodes[trigger_node_index].leaf_counter = 0                            # 리프 노드 카운터 초기화
+            sender = coin_rand_nodes[trigger_node_index]
+            for d in range(coin_rand_tree_depth - 1 - k, -1, -1):                           # 트리를 (L - k) layer의 노드부터 루트 노드로 순회
+                coin_node_index = random.randrange(0, pow(2, d))                            # 코인 추가 노드 결정
+                receiver = coin_rand_nodes[(pow(2, d) - 1) + coin_node_index]
+                message_count = message_sr(sender, receiver, message_count)                 # 코인 메시지 전달
+                if not coin_rand_nodes[(pow(2, d) - 1) + coin_node_index].coin_received:    # 코인을 전달할 노드에 이미 코인이 있는지 확인
+                    coin_rand_nodes[(pow(2, d) - 1) + coin_node_index].coin_received = True # 코인이 없을 경우 코인 추가
+                    break
+                sender = coin_rand_nodes[(pow(2, d) - 1) + coin_node_index]                 # 코인이 있을 경우 상위 layer로 코인 메시지 전송
+            if (coin_rand_nodes[0].coin_received):                                          # end-of-round 프로시저 시작 조건
+                for d in range(0, coin_rand_tree_depth - 1 - k):                            # end-of-round notification broadcast (코인 수만 확인하면 됨)
+                    for i in range(0, pow(2, d)):
+                        sender = coin_rand_nodes[(pow(2, d) - 1) + i]                       # 부모 노드
+                        receiver = coin_rand_nodes[(pow(2, d + 1) - 1) + (i * 2)]           # 왼쪽 자식 노드
+                        message_count = message_sr(sender, receiver, message_count)         # 왼쪽 자식 노드에게 notification 전달
+                        receiver = coin_rand_nodes[(pow(2, d + 1) - 1) + (i * 2) + 1]       # 오른쪽 자식 노드
+                        message_count = message_sr(sender, receiver, message_count)         # 오른쪽 자식 노드에게 notification 전달
+                for d in range(0, coin_rand_tree_depth - 1 - k):                            # end-of-round upcast (코인 수만 확인하면 됨)
+                    for i in range(0, pow(2, d)):
+                        receiver = coin_rand_nodes[(pow(2, d) - 1) + i]                     # 부모 노드
+                        sender = coin_rand_nodes[(pow(2, d + 1) - 1) + (i * 2)]             # 왼쪽 자식 노드
+                        message_count = message_sr(sender, receiver, message_count)         # 왼쪽 자식 노드의 코인 수 전달
+                        sender = coin_rand_nodes[(pow(2, d + 1) - 1) + (i * 2) + 1]         # 오른쪽 자식 노드
+                        message_count = message_sr(sender, receiver, message_count)         # 오른쪽 자식 노드의 코인 수 전달
+                w = w - trigger
+                print(f"2nd Phase: {round:2d} 라운드 끝, 발생 트리거: {trigger:6d}, 남은 트리거: {w:6d}, 현재 message complexity: {message_count:6d}, 현재 k 값: {k:2d}")
+                trigger = 0
+                for c in range(0, num_of_nodes):
+                    coin_rand_nodes[c].clear()
+                break
 
+maxSnd = 0
+maxRcv = 0
+for c in range(0, num_of_nodes):
+    if (maxSnd < coin_rand_nodes[c].send_message):
+        maxSnd = coin_rand_nodes[c].send_message
+    if (maxRcv < coin_rand_nodes[c].receive_message):
+        maxRcv = coin_rand_nodes[c].receive_message
 
-#for c in range(num_of_nodes):
- #   print(coin_rand_nodes[c].node_num)
-
-# 실험 횟수만큼 반복
+print(f"maxSend: {maxSnd}, maxRcv: {maxRcv}, message complexity: {message_count:6d}")
